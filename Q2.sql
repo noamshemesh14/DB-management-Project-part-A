@@ -1,27 +1,31 @@
 create table Investor(
-    Id varchar(9) primary key check (Id != '0%'),
+    Id char(9) primary key check (Id != '0%'),
     IName varchar(40),
     BirthDate date check (BirthDate >= '2016-01-01'),
     Email varchar(40) unique ,
     Rdate date
+    -- UNIQUE (Id, Rdate), to be considered
 );
 
 create table Premium(
-    Id varchar(9) primary key ,
+    Id char(9) primary key ,
     Rdate date check (Rdate <= DATEADD(month, -3, GETDATE())),
     FinancialGoals varchar(40),
     foreign key (Id) references Investor(Id) on delete cascade
+    -- foreign key (Id, Rdate) references Investor(Id) on delete cascade, to be considered
+
 );
 
 create table Employee(
-    Id varchar(9)primary key ,
+    Id char(9)primary key ,
     foreign key (Id) references Premium (Id) on delete no action
+    -- each employee guides at least one beginner investor
 );
 
 create table Beginner(
-    Id varchar(9) primary key ,
+    Id char(9) primary key ,
     Rdate date check (Rdate > DATEADD(month, -3, GETDATE())),
-    Guided_by varchar(9) ,
+    Guided_by char(9) not null,
     foreign key (Id) references Investor(Id) on delete cascade,
     foreign key (Guided_by) references Employee (Id) on delete cascade
 );
@@ -37,7 +41,7 @@ create table Rival_of(
     Company1 varchar(40),
     Company2 varchar(40),
     Cause varchar(40),
-    Employee varchar(9),
+    Employee char(9),
     Document varchar(40),
     primary key (Company1,Company2),
     foreign key (Company1) references Company(symbol) on delete no action ,
@@ -47,18 +51,18 @@ create table Rival_of(
 );
 
 create table TradeAccount(
-    TAid varchar(10) PRIMARY KEY ,
+    TAid char(10) PRIMARY KEY ,
     Money varchar(40) ,
     --money attribute can't be some of value from different rows.
-    Investor varchar(9),
+    Investor char(9),
     foreign key (Investor) references Investor(Id) on delete cascade
 );
 
 create table Transfer(
     Tdate date,
-    TAid varchar (10),
+    TAid char (10),
     Tamount varchar(40) check (Tamount >= 1000),
-    Employee varchar(9),
+    Employee char(9),
     TLegality varchar(40) check (TLegality = 1 OR TLegality = 0),
     primary key (Tdate,TAid),
     foreign key (TAid) references TradeAccount(TAid) on delete cascade ,
@@ -75,11 +79,11 @@ create table Stock(
 );
 
 create table Buying (
-    SAnount varchar(40),
-    TAid varchar(10),
+    SAmount varchar(40),
+    TAid char(10),
     Svalue varchar(40),
     Company varchar(40),
-    primary key (SAnount,TAid,Svalue,Company)
+    primary key (SAmount,TAid,Svalue,Company)
 );
 
 
