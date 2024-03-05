@@ -1,32 +1,38 @@
 create table Investor(
-    Id char(9) primary key check (Id != '0%'),
+    Id char(9) primary key check (Id not like '0%'),
     IName varchar(40),
-    BirthDate date check (BirthDate >= '2016-01-01'),
+    BirthDate date check (BirthDate < '2006-01-01'),
     Email varchar(40) unique ,
     Rdate date
-    -- UNIQUE (Id, Rdate), to be considered
+    UNIQUE (Id, Rdate) -- defining the combination as unique to be referenced by "descendants"
+    -- (Premium and Beginner)
+
+    -- Unable to implement in DDL: each Investor has at least one tradeAccount.
+    -- one-to-many relation that isn't stored and enforced in Investor table.
+    -- Can be verified using SQL query.
 );
 
 create table Premium(
     Id char(9) primary key ,
-    Rdate date check (Rdate <= DATEADD(month, -3, GETDATE())),
+    Rdate date check (Rdate < DATEADD(month, -3, GETDATE())),
     FinancialGoals varchar(40),
-    foreign key (Id) references Investor(Id) on delete cascade
-    -- foreign key (Id, Rdate) references Investor(Id) on delete cascade, to be considered
+    foreign key (Id, Rdate) references Investor(Id, Rdate) on delete cascade -- to be considered
 
 );
 
 create table Employee(
-    Id char(9)primary key ,
-    foreign key (Id) references Premium (Id) on delete no action
-    -- each employee guides at least one beginner investor
+    Id char(9) primary key ,
+    foreign key (Id) references Premium (Id) on delete cascade
+    -- Unable to implement in DDL: each employee guides at least one beginner.
+    -- one-to-many relation that isn't stored and enforced in Employee table.
+    -- Can be verified using SQL query.
 );
 
 create table Beginner(
     Id char(9) primary key ,
-    Rdate date check (Rdate > DATEADD(month, -3, GETDATE())),
-    Guided_by char(9) not null,
-    foreign key (Id) references Investor(Id) on delete cascade,
+    Rdate date check (Rdate >= DATEADD(month, -3, GETDATE())),
+    Guided_by char(9) not null, -- each beginner has exactly 1 guide (therefor not null).
+    foreign key (Id, Rdate) references Investor(Id, Rdate) on delete cascade,
     foreign key (Guided_by) references Employee (Id) on delete cascade
 );
 
@@ -35,6 +41,8 @@ create table Company(
     Sector   varchar(40),
     Founded  date,
     Location varchar(40),
+    -- Unable to implement in DDL: each Company has at least one Stock a day.
+    -- Can be verified using SQL query.
 );
 
 create table Rival_of(
@@ -47,13 +55,16 @@ create table Rival_of(
     foreign key (Company1) references Company(symbol) on delete no action ,
     foreign key (Company2) references Company(symbol) on delete no action ,
     foreign key (Employee) references Employee(Id) on delete set null ,
-    check (Company1 > Company2)
+    check (Company1 > Company2) -- defining relation as ordered pair to ignore internal order.
+    -- prevents reflexivity (company is a rival of itself).
 );
 
 create table TradeAccount(
-    TAid char(10) PRIMARY KEY ,
-    Money varchar(40) ,
-    --money attribute can't be some of value from different rows.
+    TAid char(10) primary key ,
+    Money double precision ,
+    -- Unable to implement in DDL: Money = sum of transactions made to TA - invested money
+    -- field value can't be calculated by values in different rows / tables.
+    -- Can be verified using SQL query.
     Investor char(9),
     foreign key (Investor) references Investor(Id) on delete cascade
 );
@@ -61,9 +72,9 @@ create table TradeAccount(
 create table Transfer(
     Tdate date,
     TAid char (10),
-    Tamount varchar(40) check (Tamount >= 1000),
+    Tamount double precision check (Tamount >= 1000),
     Employee char(9),
-    TLegality varchar(40) check (TLegality = 1 OR TLegality = 0),
+    TLegality bit, -- proper values: {1,0}
     primary key (Tdate,TAid),
     foreign key (TAid) references TradeAccount(TAid) on delete cascade ,
     foreign key (Employee) references Employee(Id) on delete set null
@@ -72,18 +83,19 @@ create table Transfer(
 create table Stock(
     Sdate date,
     Company varchar(40),
-    Svalue varchar(40),
+    Svalue double precision,
     primary key (Sdate,Company),
     foreign key (Company) references Company(symbol) on delete cascade ,
-    --Each company have to at least one stock at day.
 );
 
 create table Buying (
-    SAmount varchar(40),
+    SAmount double precision,
     TAid char(10),
-    Svalue varchar(40),
+    Sdate date,
     Company varchar(40),
-    primary key (SAmount,TAid,Svalue,Company)
+    primary key (TAid,Sdate,Company, SAmount),
+    UNIQUE (TAid, Sdate, Company) -- uniqueness is defined by a group of attributes
+    -- which is a subset of the primary key. yet we define primary key as requested.
 );
 
 
