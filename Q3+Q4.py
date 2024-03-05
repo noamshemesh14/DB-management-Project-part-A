@@ -44,3 +44,40 @@ where A.ID not in ((select B.ID
 ORDER BY Actions DESC, Sector;
 
 
+create view BoughtOnce
+as
+select B.Symbol
+from Buying B
+group by B.Symbol
+having count(*) = 1
+
+create view SubsequentDay
+as
+select B.Symbol ,min(S.tDate) as SubsequentDay
+from Stock S inner join BoughtOnce BO on S.Symbol = BO.Symbol
+             inner join Buying B on BO.Symbol = B.Symbol
+where S.tDate > B.tDate
+group by B.Symbol
+
+
+create view AGroysaMetzia
+as
+select B.Symbol
+from Stock S inner join SubsequentDay SB on S.Symbol = SB.Symbol and S.tDate = SB.SubsequentDay
+             inner join Buying B on SB.Symbol = B.Symbol
+             inner join Stock S1 on S1.Symbol = B.Symbol and S1.tDate = B.tDate
+where S.Price > (2.0/100) * (S1.Price) + (S1.Price)
+
+create view SharpInvestor
+as
+select B.ID
+from Buying B inner join AGroysaMetzia AGM on B.Symbol = AGM.Symbol
+
+
+select SI.ID, count(*) as Actions
+from SharpInvestor SI inner join Buying B on SI.ID = B.ID
+    inner join Company C on B.Symbol = C.Symbol
+where C.Founded < 2000-01-01 and C.Location = 'California'
+group by SI.ID
+
+
