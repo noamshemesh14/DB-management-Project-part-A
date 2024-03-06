@@ -4,9 +4,6 @@ create table Investor(
     BirthDate date check (BirthDate < '2006-01-01'),
     Email varchar(40) unique ,
     Rdate date
-    UNIQUE (Id, Rdate) -- defining the combination as unique to be referenced by "descendants"
-    -- (Premium and Beginner)
-
     -- Unable to implement in DDL: each Investor has at least one tradeAccount.
     -- one-to-many relation that isn't stored and enforced in Investor table.
     -- Can be verified using SQL query.
@@ -14,10 +11,8 @@ create table Investor(
 
 create table Premium(
     Id char(9) primary key ,
-    Rdate date check (Rdate < DATEADD(month, -3, GETDATE())),
     FinancialGoals varchar(40),
-    foreign key (Id, Rdate) references Investor(Id, Rdate) on delete cascade -- to be considered
-
+    foreign key (Id) references Investor(Id) on delete cascade
 );
 
 create table Employee(
@@ -30,9 +25,8 @@ create table Employee(
 
 create table Beginner(
     Id char(9) primary key ,
-    Rdate date check (Rdate >= DATEADD(month, -3, GETDATE())),
     Guided_by char(9) not null, -- each beginner has exactly 1 guide (therefor not null).
-    foreign key (Id, Rdate) references Investor(Id, Rdate) on delete cascade,
+    foreign key (Id) references Investor(Id) on delete cascade,
     foreign key (Guided_by) references Employee (Id) on delete cascade
 );
 
@@ -93,24 +87,5 @@ create table Buying (
     TAid char(10),
     Sdate date,
     Company varchar(40),
-    primary key (TAid,Sdate,Company, SAmount),
-    UNIQUE (TAid, Sdate, Company) -- uniqueness is defined by a group of attributes
-    -- which is a subset of the primary key. yet we define primary key as requested.
+        primary key (TAid, Sdate, Company,SAmount),
 );
-
-
---drop table Buying ;
---drop table Stock;
---drop table Transfer;
---drop table TradeAccount;
---drop table Rival_of;
---drop table Company;
---drop table Beginner;
---drop table Employee;
---drop table Premium;
---drop table Investor;
-
-
-
-
-
