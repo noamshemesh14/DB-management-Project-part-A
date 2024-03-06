@@ -1,5 +1,5 @@
 create table Investor(
-    Id char(9) primary key check (Id not like '0%'),
+    Id int primary key check (Id <= 999999999 and Id >= 100000000),
     IName varchar(40),
     BirthDate date check (BirthDate < '2006-01-01'),
     Email varchar(40) unique ,
@@ -10,13 +10,13 @@ create table Investor(
 );
 
 create table Premium(
-    Id char(9) primary key ,
+    Id int primary key ,
     FinancialGoals varchar(40),
     foreign key (Id) references Investor(Id) on delete cascade
 );
 
 create table Employee(
-    Id char(9) primary key ,
+    Id int primary key ,
     foreign key (Id) references Premium (Id) on delete cascade
     -- Unable to implement in DDL: each employee guides at least one beginner.
     -- one-to-many relation that isn't stored and enforced in Employee table.
@@ -24,10 +24,12 @@ create table Employee(
 );
 
 create table Beginner(
-    Id char(9) primary key ,
-    Guided_by char(9) not null, -- each beginner has exactly 1 guide (therefor not null).
+    Id int primary key ,
+    Guided_by int not null, -- each beginner has exactly 1 guide (therefor not null).
+    check (Id != Guided_by),
     foreign key (Id) references Investor(Id) on delete cascade,
-    foreign key (Guided_by) references Employee (Id) on delete cascade
+    foreign key (Guided_by) references Employee (Id)
+    --Unable to on delete cascade, may cause cycles or multiple cascade paths.
 );
 
 create table Company(
@@ -42,15 +44,17 @@ create table Company(
 create table Rival_of(
     Company1 varchar(40),
     Company2 varchar(40),
-    Cause varchar(40),
-    Employee char(9),
+    Cause varchar(40) ,
+    Employee int UNIQUE default null,
     Document varchar(40),
     primary key (Company1,Company2),
-    foreign key (Company1) references Company(symbol) on delete no action ,
-    foreign key (Company2) references Company(symbol) on delete no action ,
-    foreign key (Employee) references Employee(Id) on delete set null ,
-    check (Company1 > Company2) -- defining relation as ordered pair to ignore internal order.
+    check (Company1 > Company2), -- defining relation as ordered pair to ignore internal order.
     -- prevents reflexivity (company is a rival of itself).
+    check ((Employee is null and Document is null) or (Employee is not null and Document is not null )),
+    foreign key (Company1) references Company(symbol) on delete cascade ,
+    foreign key (Company2) references Company(symbol),
+    --Unable to on delete cascade, may cause cycles or multiple cascade paths.
+    foreign key (Employee) references Employee(Id) on delete set null
 );
 
 create table TradeAccount(
@@ -59,7 +63,7 @@ create table TradeAccount(
     -- Unable to implement in DDL: Money = sum of transactions made to TA - invested money
     -- field value can't be calculated by values in different rows / tables.
     -- Can be verified using SQL query.
-    Investor char(9),
+    Investor int,
     foreign key (Investor) references Investor(Id) on delete cascade
 );
 
@@ -67,11 +71,13 @@ create table Transfer(
     Tdate date,
     TAid char (10),
     Tamount double precision check (Tamount >= 1000),
-    Employee char(9),
-    TLegality bit, -- proper values: {1,0}
+    Employee int default null,
+    TLegality char(1) check (TLegality = '1' or TLegality = '0'),
     primary key (Tdate,TAid),
+    check ((Employee is null and TLegality is null) or (Employee is not null and TLegality is not null )),
     foreign key (TAid) references TradeAccount(TAid) on delete cascade ,
-    foreign key (Employee) references Employee(Id) on delete set null
+    foreign key (Employee) references Employee(Id)
+    --Unable to on delete set null, may cause cycles or multiple cascade paths.
 );
 
 create table Stock(
@@ -79,7 +85,7 @@ create table Stock(
     Company varchar(40),
     Svalue double precision,
     primary key (Sdate,Company),
-    foreign key (Company) references Company(symbol) on delete cascade ,
+    foreign key (Company) references Company(symbol) on delete cascade
 );
 
 create table Buying (
@@ -87,5 +93,7 @@ create table Buying (
     TAid char(10),
     Sdate date,
     Company varchar(40),
-        primary key (TAid, Sdate, Company,SAmount),
+    primary key (TAid,Sdate,Company),
+    foreign key (TAid) references TradeAccount(TAid) on delete cascade,
+    foreign key (Sdate,Company) references Stock(Sdate,Company) on delete cascade
 );
