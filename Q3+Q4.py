@@ -77,7 +77,7 @@ from Buying B inner join AGroysaMetzia AGM on B.Symbol = AGM.Symbol
 select SI.ID, count(*) as Actions
 from SharpInvestor SI inner join Buying B on SI.ID = B.ID
     inner join Company C on B.Symbol = C.Symbol
-where C.Founded < 2000-01-01 and C.Location = 'California'
+where C.Founded < 2000 and C.Location = 'California'
 group by SI.ID
 
 
